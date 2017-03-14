@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-# 添加层
+# 添加神经层
 def add_layer(inputs, in_size, out_size, activation_function=None):
     # add one more layer and return the output of this layer
     # 权重
@@ -19,7 +19,7 @@ def add_layer(inputs, in_size, out_size, activation_function=None):
 
 # 1.训练的数据
 # Make up some real data
-x_data = np.linspace(-1,1,300)[:, np.newaxis]
+x_data = np.linspace(-1, 1, 300)[:, np.newaxis]
 noise = np.random.normal(0, 0.05, x_data.shape)
 y_data = np.square(x_data) - 0.5 + noise
 
@@ -38,11 +38,9 @@ prediction = add_layer(l1, 10, 1, activation_function=None)
 # the error between prediciton and real data
 loss = tf.reduce_mean(tf.reduce_sum(tf.square(ys - prediction),
                      reduction_indices=[1]))
-
 # 5.选择 optimizer 使 loss 达到最小
 # 这一行定义了用什么方式去减少 loss，学习率是 0.1
 train_step = tf.train.GradientDescentOptimizer(0.1).minimize(loss)
-
 
 # important step 对所有变量进行初始化
 init = tf.initialize_all_variables()
