@@ -24,11 +24,6 @@ for step in range(201):
     if step % 20 == 0:
         print(step, sess.run(Weights), sess.run(biases))
 
-
-
-
-
-
 """添加神经层"""
 
 def add_layer(inputs, in_size, out_size,  activation_function=None):
