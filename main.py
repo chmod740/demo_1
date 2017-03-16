@@ -35,3 +35,5 @@ def add_layer(inputs, in_size, out_size,  activation_function=None):
     else:
         outputs = activation_function(Wx_plus_b)
     return outputs
+
+
