@@ -90,6 +90,7 @@ def text2vector(text):
     for i in range(len(text)):
         vector[i*10 + int(text[i])] = 1
     return vector
+
 """
 从向量转文本
 """
@@ -101,7 +102,26 @@ def vector2text(vector):
     return text
 
 
+def get_next_batch():
+    """
+    将图像转换成灰度图像
+    """
+    text, image = gen_captcha_text_and_image()
+    image = convert2gray(image)
+    image = image.flatten() / 255
+    image = image.reshape(([-1, 1]))
+    x_data = image
+    y_data = text2vector(text)
+    return x_data, y_data
 
+# 定义节点 准备接收数据
+xs = tf.placeholder(tf.float32, [None, 9600])
+ys = tf.placeholder(tf.float32, [None, 40])
+
+# 3.定义神经层：隐藏层和预测层
+l1 = add_layer(xs, 10, 10, activation_function=tf.nn.relu)
+# add output layer 输入值是隐藏层 l1，在预测层输出 1 个结果
+prediction = add_layer(l1, 10, 1, activation_function=None)
 
 
 # 1.训练的数据
@@ -144,17 +164,4 @@ def vector2text(vector):
 #         print(sess.run(loss, feed_dict={xs: x_data, ys: y_data}))
 
 
-
-
-def get_next_batch():
-    """
-    将图像转换成灰度图像
-    """
-    text, image = gen_captcha_text_and_image()
-    image = convert2gray(image)
-    image = image.flatten() / 255
-    image = image.reshape(([-1, 1]))
-    x_data = image
-    y_data = text2vector(text)
-    return x_data, y_data
 
