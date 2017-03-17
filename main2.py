@@ -81,19 +81,28 @@ def add_layer(inputs, in_size, out_size, activation_function=None):
     return outputs
 
 
-text, image = gen_captcha_text_and_image()
-
 """
-将图像转换成灰度图像
+文本转向量
+文本的长度必须是4！！！
 """
-image = convert2gray(image)
-
-x = tf.reshape(image, shape=[-1, 1])
-
-
-def text2vecot(text):
+def text2vector(text):
     vector = np.zeros(40)
-    for i in range(4):
+    for i in range(len(text)):
+        vector[i*10 + int(text[i])] = 1
+    return vector
+"""
+从向量转文本
+"""
+def vector2text(vector):
+    text = ""
+    for i in range(len(vector)):
+        if vector[i] != 0:
+            text = text + str(i%10)
+    return text
+
+
+
+
 
 # 1.训练的数据
 # Make up some real data
@@ -133,3 +142,19 @@ def text2vecot(text):
 #     if i % 50 == 0:
 #         # to see the step improvement
 #         print(sess.run(loss, feed_dict={xs: x_data, ys: y_data}))
+
+
+
+
+def get_next_batch():
+    """
+    将图像转换成灰度图像
+    """
+    text, image = gen_captcha_text_and_image()
+    image = convert2gray(image)
+    image = image.flatten() / 255
+    image = image.reshape(([-1, 1]))
+    x_data = image
+    y_data = text2vector(text)
+    return x_data, y_data
+
