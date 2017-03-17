@@ -106,22 +106,55 @@ def get_next_batch():
     """
     将图像转换成灰度图像
     """
-    text, image = gen_captcha_text_and_image()
+    while True:
+        text, image = gen_captcha_text_and_image()
+        if image.shape == (60, 160, 3):
+            break
     image = convert2gray(image)
     image = image.flatten() / 255
-    image = image.reshape(([-1, 1]))
+    image = image.reshape(([1, -1]))
     x_data = image
     y_data = text2vector(text)
+    y_data = y_data.reshape((1, -1))
     return x_data, y_data
 
 # 定义节点 准备接收数据
 xs = tf.placeholder(tf.float32, [None, 9600])
 ys = tf.placeholder(tf.float32, [None, 40])
-
+keep_prob = tf.placeholder(tf.float32)  # dropout
 # 3.定义神经层：隐藏层和预测层
-l1 = add_layer(xs, 10, 10, activation_function=tf.nn.relu)
+l1 = add_layer(xs, 9600, 100, activation_function=tf.nn.relu)
 # add output layer 输入值是隐藏层 l1，在预测层输出 1 个结果
-prediction = add_layer(l1, 10, 1, activation_function=None)
+
+prediction = add_layer(l1, 100, 40, activation_function=None)
+
+# 定义loss表达式
+loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(prediction, ys))
+# loss = tf.reduce_mean(tf.reduce_sum(tf.square(ys - prediction), reduction_indices=[1]))
+# 5.选择 optimizer 使 loss 达到最小
+# 这一行定义了用什么方式去减少 loss，学习率是 0.1
+train_step = tf.train.GradientDescentOptimizer(0.01).minimize(loss)
+# important step 对所有变量进行初始化
+init = tf.global_variables_initializer()
+
+saver = tf.train.Saver()
+with tf.Session() as sess:
+    with tf.device("/gpu:0"):
+        sess.run(init)
+        step = 0
+        while True:
+            x_data, y_data = get_next_batch()
+            # training train_step 和 loss 都是由 placeholder 定义的运算，所以这里要用 feed 传入参数
+            _, loss_ = sess.run([train_step, loss], feed_dict={xs: x_data, ys: y_data, keep_prob: 0.75})
+            if step % 100 == 0:
+                print(sess.run([loss], feed_dict={xs: x_data, ys: y_data, keep_prob: 1.}))
+
+            if step == 10000:
+                saver.save(sess, "./crack_capcha.model", global_step=step)
+                break
+            step += 1
+
+
 
 
 # 1.训练的数据
