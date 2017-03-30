@@ -10,10 +10,16 @@ class GenFace:
         self.photo_count = 999
         self.name_count = 0
         self.name_mapping = {}
+        self.num_mapping = {}
+
+        tmp_i = 0
         for line in fileinput.input("name_mapping"):
-            line = str(line).replace("\n","")
-            self.name_mapping[line.split(" ")[0]] = line.split(" ")[1]
+            line = str(line).replace("\n", "")
+            self.name_mapping[tmp_i] = line.split(" ")[1]
+            self.num_mapping[tmp_i] = line.split(" ")[0]
+
             self.name_count += 1
+            tmp_i += 1
         self.i = 0
         self.j = 0
 
@@ -25,28 +31,29 @@ class GenFace:
         #         return j, captcha_image
         while True:
             try:
-                # print("./me/" + self.name_mapping[self.intCoverToStr(self.j)] + '_' + str(self.i) + '.jpg')
-                captcha_image = Image.open("./me/" + self.name_mapping[self.intCoverToStr(self.j)] + '_' + str(self.i) + '.jpg')
-                captcha_image = captcha_image.resize((200, 200))
+                # print("D:/train/" + self.name_mapping[self.j] + '_' + str(self.i) + '.jpg')
+                captcha_image = Image.open("D:/train/" + self.name_mapping[self.j] + '_' + str(self.i) + '.jpg')
+                captcha_image = captcha_image.resize((40, 40))
                 aptcha_image = np.array(captcha_image)
+                # np.resize([50,50])
                 tmp = self.j
                 self.j += 1
                 if self.j % self.name_count == 0:
                     self.j = 0
                     self.i += 1
-                return self.intCoverToStr(tmp), aptcha_image
+                return self.num_mapping[tmp], aptcha_image
             except Exception as err:
-                print(err)
+                # print(err)
                 self.j += 1
                 if self.j % self.name_count == 0:
                     self.j = 0
                     self.i += 1
                 continue
-    def intCoverToStr(self, t):
-        t = str(t)
-        for i in range(4-len(t)):
-            t = '0' + t
-        return t
+    # def intCoverToStr(self, t):
+    #     t = str(t)
+    #     for i in range(4-len(t)):
+    #         t = '0' + t
+    #     return t
 
 # gen_video = GenVideo()
 # print(gen_video.intCoverToStr(10))
@@ -54,6 +61,7 @@ class GenFace:
 
 
 
-# gen_video = GenVideo()
+# gen_video = GenFace()
 # for i in range(100):
-#     gen_video.gen_captcha_text_and_image()
+#     text, image = gen_video.gen_captcha_text_and_image()
+#     print(text)

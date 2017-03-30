@@ -2,14 +2,13 @@
 训练
 """
 
-from gen_captcha import gen_captcha_text_and_image
-from gen_captcha import number
-from gen_captcha import alphabet
-from gen_captcha import ALPHABET
-
 import numpy as np
 import tensorflow as tf
-import os
+
+from old.gen_captcha import ALPHABET
+from old.gen_captcha import alphabet
+from old.gen_captcha import gen_captcha_text_and_image
+from old.gen_captcha import number
 
 text, image = gen_captcha_text_and_image()
 print("验证码图像channel:", image.shape)  # (60, 160, 3)

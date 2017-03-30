@@ -43,11 +43,7 @@ with tf.Session() as sess:
     writer = tf.train.SummaryWriter("logs/", sess.graph)
     sess.run(init)
 
-    # fig = plt.figure()
-    # ax = fig.add_subplot(1, 1, 1)
-    # ax.scatter(x_data, y_data)
-    # plt.show()
-    # for i in range(10000):
-    #     sess.run(train_step, feed_dict={xs: x_data, ys: y_data})
-    #     if i % 50 == 0:
-    #         print(sess.run(loss, feed_dict={xs: x_data, ys: y_data}))
+    for i in range(10000):
+        sess.run(train_step, feed_dict={xs: x_data, ys: y_data})
+        if i % 50 == 0:
+            print(sess.run(loss, feed_dict={xs: x_data, ys: y_data}))
