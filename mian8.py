@@ -1,7 +1,5 @@
-from gen_captcha import gen_captcha_text_and_image
-from gen_captcha import number
-from gen_captcha import alphabet
-from gen_captcha import ALPHABET
+from gen_check_code import gen_captcha_text_and_image
+from gen_check_code import number
 
 import numpy as np
 import tensorflow as tf
@@ -32,11 +30,11 @@ cnn在图像大小是2的倍数时性能最高, 如果你用的图像大小不�
 np.pad(image,((2,3),(2,2)), 'constant', constant_values=(255,))  # 在图像上补2行，下补3行，左补2行，右补2行 
 """
 
-# 文本转向量  
-char_set = number + alphabet + ALPHABET + ['_']  # 如果验证码长度小于4, '_'用来补齐  
+
+char_set = number   # 如果验证码长度小于4, '_'用来补齐
 CHAR_SET_LEN = len(char_set)
 
-
+# 文本转向量
 def text2vec(text):
     text_len = len(text)
     if text_len > MAX_CAPTCHA:
@@ -45,16 +43,10 @@ def text2vec(text):
     vector = np.zeros(MAX_CAPTCHA * CHAR_SET_LEN)
 
     def char2pos(c):
-        if c == '_':
-            k = 62
-            return k
-        k = ord(c) - 48
-        if k > 9:
-            k = ord(c) - 55
-            if k > 35:
-                k = ord(c) - 61
-                if k > 61:
-                    raise ValueError('No Map')
+        try:
+            k = ord(c)-ord('0')
+        except:
+            raise ValueError('No Map')
         return k
 
     for i, c in enumerate(text):
@@ -123,10 +115,14 @@ def crack_captcha_cnn(w_alpha=0.01, b_alpha=0.1):
     # w_d1_alpha = np.sqrt(2.0/(8*32*64))
     # out_alpha = np.sqrt(2.0/1024)
 
-    # 3 conv layer  
+    # 3 conv layer
+    # 定义第一层权重
     w_c1 = tf.Variable(w_alpha * tf.random_normal([3, 3, 1, 32]))
+    # 定义第一层的偏置
     b_c1 = tf.Variable(b_alpha * tf.random_normal([32]))
+    # 定义第一层的激励函数
     conv1 = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(x, w_c1, strides=[1, 1, 1, 1], padding='SAME'), b_c1))
+    #
     conv1 = tf.nn.max_pool(conv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
     conv1 = tf.nn.dropout(conv1, keep_prob)
 
@@ -188,11 +184,9 @@ def train_crack_captcha_cnn():
                 acc = sess.run(accuracy, feed_dict={X: batch_x_test, Y: batch_y_test, keep_prob: 1.})
                 print(step, acc)
                 # 如果准确率大于50%,保存模型,完成训练  
-                if acc > 0.5:
-                    saver.save(sess, "crack_capcha.model", global_step=step)
+                if acc > 0.95:
+                    saver.save(sess, "./crack_capcha.model", global_step=step)
                     break
-
             step += 1
-
 
 train_crack_captcha_cnn()
