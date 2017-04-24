@@ -1,14 +1,15 @@
-from gen_check_code import gen_captcha_text_and_image
+from gen_check_code import gen_captcha_text_and_image_new,gen_captcha_text_and_image
 from gen_check_code import number
-
+from test_check_code import get_test_captcha_text_and_image
 import numpy as np
 import tensorflow as tf
 
-text, image = gen_captcha_text_and_image()
+text, image = gen_captcha_text_and_image_new()
 print("验证码图像channel:", image.shape)  # (60, 160, 3)  
 # 图像大小  
-IMAGE_HEIGHT = 60
-IMAGE_WIDTH = 160
+IMAGE_HEIGHT = image.shape[0]
+IMAGE_WIDTH = image.shape[1]
+image_shape = image.shape
 MAX_CAPTCHA = len(text)
 print("验证码文本最长字符数", MAX_CAPTCHA)  # 验证码最长4字符; 我全部固定为4,可以不固定. 如果验证码长度小于4，用'_'补齐
 
@@ -86,13 +87,15 @@ def get_next_batch(batch_size=128):
     # 有时生成图像大小不是(60, 160, 3)  
     def wrap_gen_captcha_text_and_image():
         while True:
-            text, image = gen_captcha_text_and_image()
-            if image.shape == (60, 160, 3):
+            text, image = gen_captcha_text_and_image_new()
+
+            if image.shape == image_shape:
                 return text, image
 
     for i in range(batch_size):
         text, image = wrap_gen_captcha_text_and_image()
         image = convert2gray(image)
+
 
         batch_x[i, :] = image.flatten() / 255  # (image.flatten()-128)/128  mean为0
         batch_y[i, :] = text2vec(text)
@@ -153,7 +156,7 @@ def crack_captcha_cnn(w_alpha=0.01, b_alpha=0.1):
 
     # Fully connected layer
     # 随机生成权重
-    w_d = tf.Variable(w_alpha * tf.random_normal([8 * 32 * 40, 1024]))
+    w_d = tf.Variable(w_alpha * tf.random_normal([1536, 1024]))
     # 随机生成偏置
     b_d = tf.Variable(b_alpha * tf.random_normal([1024]))
     dense = tf.reshape(conv3, [-1, w_d.get_shape().as_list()[0]])
@@ -169,6 +172,9 @@ def crack_captcha_cnn(w_alpha=0.01, b_alpha=0.1):
 
 # 训练
 def train_crack_captcha_cnn():
+    X = tf.placeholder(tf.float32, [None, IMAGE_HEIGHT * IMAGE_WIDTH])
+    Y = tf.placeholder(tf.float32, [None, MAX_CAPTCHA * CHAR_SET_LEN])
+    # keep_prob = tf.placeholder(tf.float32)  # dropout
     output = crack_captcha_cnn()
     # loss  
     # loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(output, Y))
@@ -204,4 +210,49 @@ def train_crack_captcha_cnn():
                     break
             step += 1
 
-train_crack_captcha_cnn()
+# train_crack_captcha_cnn()
+
+# def crack_captcha():
+#     output = crack_captcha_cnn()
+#
+#     saver = tf.train.Saver()
+#     with tf.Session() as sess:
+#         saver.restore(sess, tf.train.latest_checkpoint('.'))
+#         predict = tf.argmax(tf.reshape(output, [-1, MAX_CAPTCHA, CHAR_SET_LEN]), 2)
+#         for i in range(39):
+#             text, image = get_test_captcha_text_and_image(i)
+#             image = convert2gray(image)
+#             image = image.flatten() / 255
+#
+#             text_list = sess.run(predict, feed_dict={X: [image], keep_prob: 1})
+#             predict_text = text_list[0].tolist()
+#             # predict_text = str(predict_result)
+#             # predict_text = predict_text.replace("[", "").replace("]", "").replace(",", "").replace(" ","")
+#             print("正确: {}  预测: {}".format(text, predict_text))
+#
+# crack_captcha()
+
+def crack_captcha():
+    output = crack_captcha_cnn()
+
+    saver = tf.train.Saver()
+    with tf.Session() as sess:
+        saver.restore(sess, tf.train.latest_checkpoint('.'))
+
+        predict = tf.argmax(tf.reshape(output, [-1, MAX_CAPTCHA, CHAR_SET_LEN]), 2)
+        count = 0
+        for i in range(40):
+            text, image = get_test_captcha_text_and_image(i)
+            image = convert2gray(image)
+            captcha_image = image.flatten() / 255
+            text_list = sess.run(predict, feed_dict={X: [captcha_image], keep_prob: 1})
+            predict_text = text_list[0].tolist()
+            predict_text = str(predict_text)
+            predict_text = predict_text.replace("[", "").replace("]", "").replace(",", "").replace(" ","")
+
+            print("正确: {}  预测: {}".format(text, predict_text))
+
+            if text == predict_text:
+                count += 1
+        print(count)
+crack_captcha()
