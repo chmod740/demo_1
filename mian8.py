@@ -172,8 +172,8 @@ def crack_captcha_cnn(w_alpha=0.01, b_alpha=0.1):
 
 # 训练
 def train_crack_captcha_cnn():
-    X = tf.placeholder(tf.float32, [None, IMAGE_HEIGHT * IMAGE_WIDTH])
-    Y = tf.placeholder(tf.float32, [None, MAX_CAPTCHA * CHAR_SET_LEN])
+    # X = tf.placeholder(tf.float32, [None, IMAGE_HEIGHT * IMAGE_WIDTH])
+    # Y = tf.placeholder(tf.float32, [None, MAX_CAPTCHA * CHAR_SET_LEN])
     # keep_prob = tf.placeholder(tf.float32)  # dropout
     output = crack_captcha_cnn()
     # loss  
@@ -205,32 +205,15 @@ def train_crack_captcha_cnn():
                 acc = sess.run(accuracy, feed_dict={X: batch_x_test, Y: batch_y_test, keep_prob: 1.})
                 print(step, acc)
                 # 如果准确率大于50%,保存模型,完成训练  
-                if acc > 0.95:
+                if acc > 0.99:
                     saver.save(sess, "./crack_capcha.model", global_step=step)
                     break
             step += 1
 
+## 训练
 # train_crack_captcha_cnn()
 
-# def crack_captcha():
-#     output = crack_captcha_cnn()
-#
-#     saver = tf.train.Saver()
-#     with tf.Session() as sess:
-#         saver.restore(sess, tf.train.latest_checkpoint('.'))
-#         predict = tf.argmax(tf.reshape(output, [-1, MAX_CAPTCHA, CHAR_SET_LEN]), 2)
-#         for i in range(39):
-#             text, image = get_test_captcha_text_and_image(i)
-#             image = convert2gray(image)
-#             image = image.flatten() / 255
-#
-#             text_list = sess.run(predict, feed_dict={X: [image], keep_prob: 1})
-#             predict_text = text_list[0].tolist()
-#             # predict_text = str(predict_result)
-#             # predict_text = predict_text.replace("[", "").replace("]", "").replace(",", "").replace(" ","")
-#             print("正确: {}  预测: {}".format(text, predict_text))
-#
-# crack_captcha()
+
 
 def crack_captcha():
     output = crack_captcha_cnn()
@@ -249,10 +232,13 @@ def crack_captcha():
             predict_text = text_list[0].tolist()
             predict_text = str(predict_text)
             predict_text = predict_text.replace("[", "").replace("]", "").replace(",", "").replace(" ","")
-
-            print("正确: {}  预测: {}".format(text, predict_text))
-
             if text == predict_text:
                 count += 1
+                check_result = "，预测结果正确"
+            else:
+                check_result = "，预测结果不正确"
+                print("正确: {}  预测: {}".format(text, predict_text) + check_result)
+
+
         print(count)
 crack_captcha()
