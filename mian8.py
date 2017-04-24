@@ -14,12 +14,14 @@ print("验证码文本最长字符数", MAX_CAPTCHA)  # 验证码最长4字符; 
 
 
 # 把彩色图像转为灰度图像（色彩对识别验证码没有什么用）
+# 度化是将三分量转化成一样数值的过程
 def convert2gray(img):
     if len(img.shape) > 2:
         gray = np.mean(img, -1)
         # 上面的转法较快，正规转法如下  
         # r, g, b = img[:,:,0], img[:,:,1], img[:,:,2]  
-        # gray = 0.2989 * r + 0.5870 * g + 0.1140 * b  
+        # gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
+        # int gray = (int) (0.3 * r + 0.59 * g + 0.11 * b);
         return gray
     else:
         return img
@@ -115,31 +117,44 @@ def crack_captcha_cnn(w_alpha=0.01, b_alpha=0.1):
     # w_d1_alpha = np.sqrt(2.0/(8*32*64))
     # out_alpha = np.sqrt(2.0/1024)
 
-    # 3 conv layer
+    # 定义三层的卷积神经网络
+
+    # 定义第一层的卷积神经网络
     # 定义第一层权重
     w_c1 = tf.Variable(w_alpha * tf.random_normal([3, 3, 1, 32]))
     # 定义第一层的偏置
     b_c1 = tf.Variable(b_alpha * tf.random_normal([32]))
     # 定义第一层的激励函数
+    # conv2d 为卷积函数 x 为输入  w_c1为权重  strides 1*1 为卷积核的大小  channel，这里因为是灰度所以是1，彩色的话是3；
+    # 第四个参数表示卷积核的数量，即提取多少特征；
+    # padding 参数指定边界的处理方式，"SAME"代表输入输入保持一样
+    # tf.nn.bias_add 函数主要负责添加偏置值
+    # tf.nn.relu函数是激励函数
     conv1 = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(x, w_c1, strides=[1, 1, 1, 1], padding='SAME'), b_c1))
-    #
+    # 池化函数（降采样，将2x2降为1x1提取最显著的特征），这里使用最大池化max_pool
+    # conv1 为输入  ksize 表示使用2*2池化，即将2*2的色块转化成1*1的色块
     conv1 = tf.nn.max_pool(conv1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+    # dropout防止过拟合。
     conv1 = tf.nn.dropout(conv1, keep_prob)
 
+    # 定义第二层的卷积神经网络
     w_c2 = tf.Variable(w_alpha * tf.random_normal([3, 3, 32, 64]))
     b_c2 = tf.Variable(b_alpha * tf.random_normal([64]))
     conv2 = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(conv1, w_c2, strides=[1, 1, 1, 1], padding='SAME'), b_c2))
     conv2 = tf.nn.max_pool(conv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
     conv2 = tf.nn.dropout(conv2, keep_prob)
 
+    # 定义第三层的卷积神经网络
     w_c3 = tf.Variable(w_alpha * tf.random_normal([3, 3, 64, 64]))
     b_c3 = tf.Variable(b_alpha * tf.random_normal([64]))
     conv3 = tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(conv2, w_c3, strides=[1, 1, 1, 1], padding='SAME'), b_c3))
     conv3 = tf.nn.max_pool(conv3, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
     conv3 = tf.nn.dropout(conv3, keep_prob)
 
-    # Fully connected layer  
+    # Fully connected layer
+    # 随机生成权重
     w_d = tf.Variable(w_alpha * tf.random_normal([8 * 32 * 40, 1024]))
+    # 随机生成偏置
     b_d = tf.Variable(b_alpha * tf.random_normal([1024]))
     dense = tf.reshape(conv3, [-1, w_d.get_shape().as_list()[0]])
     dense = tf.nn.relu(tf.add(tf.matmul(dense, w_d), b_d))
